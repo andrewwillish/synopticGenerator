@@ -4,17 +4,6 @@ __author__ = 'andrew.willis'
 
 import maya.cmds as cmds
 import os, imp
-try:
-    import MNCA_projectid
-    PROJECTvar= MNCA_projectid.PROJECTIDcls().id()
-except:
-    PROJECTvar=''
-    pass
-
-#License Parsing==========================================================================================
-import licenseParsing
-licenseParsing.licParse()
-#License Parsing==========================================================================================
 
 class synopticLauncherLocalCLS:
     def __init__(self):

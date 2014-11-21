@@ -5,38 +5,37 @@ __author__ = 'andrew.willis'
 
 import maya.cmds as cmds
 import xml.etree.cElementTree as ET
-import imp, os
-
-try:
-    import MNCA_projectid
-    PROJECTvar= MNCA_projectid.PROJECTIDcls().id()
-except:
-    PROJECTvar=''
-    pass
-
-#License Parsing==========================================================================================
-import licenseParsing
-licenseParsing.licParse()
-#License Parsing==========================================================================================
-
+import imp, os, getpass, asiist
 
 #Declare file data
-SYNOPTICSIZEXvar=''
-SYNOPTICSIZEYvar=''
-SYNOPTICNAMEvar=''
-SYNOPTICCOLORvar=[0.5,0.5,0.5]
-COMPONENTSlis=[]
+synopticSizeX=''
+synopticSizeY=''
+synopticName=''
+synopticColor=[0.5,0.5,0.5]
+componentLis=[]
+
+#windows root
+winRoot = os.environ['ProgramFiles'][:2]+'/'
+
+#determin current user
+currentUser = str(getpass.getuser())
+
+#determining root path
+rootPath = os.path.dirname(os.path.realpath(__file__)).replace('\\','/')
+
+#fetch data from projInfo
+enviFetch=asiist.getEnvi()
+for chk in enviFetch:
+    if chk[0] == 'projName': curProj = chk[1]
+    if chk[0] == 'resWidth': resWidth = chk[1]
+    if chk[0] == 'resHeight': resHeight = chk[1]
+    if chk[0] == 'playblastCodec': codec = chk[1]
+    if chk[0] == 'playblastFormat': playblastFormat = chk[1]
 
 class synopticGeneratorCLS:
     def __init__(self):
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld, NAMESPACEtxtfld, SELECTIONLISTtxtscr
-
-        if cmds.window('synopticGenerator',exists=True):
-            cmds.deleteUI('synopticGenerator',wnd=True)
-        if cmds.window('currentSynoptic',exists=True):
-            cmds.deleteUI('currentSynoptic',wnd=True)
+        if cmds.window('synopticGenerator', exists=True):cmds.deleteUI('synopticGenerator', wnd=True)
+        if cmds.window('currentSynoptic', exists=True):cmds.deleteUI('currentSynoptic',wnd=True)
 
         cmds.window('synopticGenerator',t='Synoptic Generator',menuBar=True,s=False,w=205,h=750,tbm=False)
         cmds.menu(l='File')
@@ -64,7 +63,7 @@ class synopticGeneratorCLS:
 
         f0=cmds.frameLayout(l='Component Library',p=cmas,w=200)
         cmds.columnLayout(adj=True)
-        COMPONENTLIBtxtscr=cmds.textScrollList(sc=self.POPULATECONTROLfn)
+        cmds.textScrollList('COMPONENTLIBtxtscr',sc=self.POPULATECONTROLfn)
         cmds.separator()
 
         cmds.rowColumnLayout()
@@ -79,9 +78,9 @@ class synopticGeneratorCLS:
         cmds.text(l='  Component Name & Caption',bgc=[1,1,1],al='left', fn='boldLabelFont',p=f11)
         cmds.separator()
         cmds.text(l='Name:',al='left')
-        COMPNAMEtxtfld=cmds.textField(cc=self.CHANGECOMPNAMEfn)
+        cmds.textField('COMPNAMEtxtfld',cc=self.CHANGECOMPNAMEfn)
         cmds.text(l='Caption:',al='left')
-        COMPCAPTIONtxtfld=cmds.textField(cc=self.CHANGECOMPNCAPTIONfn)
+        cmds.textField('COMPCAPTIONtxtfld',cc=self.CHANGECOMPNCAPTIONfn)
 
         cmds.text(l='',p=f11,h=4)
 
@@ -89,14 +88,14 @@ class synopticGeneratorCLS:
         cmds.separator()
         cmds.rowColumnLayout(nc=4, columnWidth=[(1, 20),(2,78), (3, 20),(4,78)], p=f11)
         cmds.text(l='X: ')
-        COMPXLOCtxtfld=cmds.textField(cc=self.CHANGECOMPPOSfn)
+        cmds.textField('COMPXLOCtxtfld',cc=self.CHANGECOMPPOSfn)
         cmds.text(l='Y: ')
-        COMPYLOCtxtfld=cmds.textField(cc=self.CHANGECOMPPOSfn)
+        cmds.textField('COMPYLOCtxtfld',cc=self.CHANGECOMPPOSfn)
 
         cmds.rowColumnLayout(nc=5, columnWidth=[(1, 40),(2,40), (3, 35),(4,40),(5,40)], p=f11)
         cmds.button(l="LEFT",c=lambda*args:self.CHANGECOMPPOSINCfn(0))
         cmds.button(l="RIGHT",c=lambda*args:self.CHANGECOMPPOSINCfn(1))
-        COMPINCREMENTtxtfld=cmds.textField(tx='1')
+        cmds.textField('COMPINCREMENTtxtfld',tx='1')
         cmds.button(l="UP",c=lambda*args:self.CHANGECOMPPOSINCfn(2))
         cmds.button(l="DOWN",c=lambda*args:self.CHANGECOMPPOSINCfn(3))
 
@@ -106,9 +105,9 @@ class synopticGeneratorCLS:
         cmds.separator(p=f11)
         cmds.rowColumnLayout(nc=4, columnWidth=[(1, 20),(2,78), (3, 20),(4,78)], p=f11)
         cmds.text(l='X: ')
-        COMPXSIZEtxtfld=cmds.textField(cc=self.CHANGECOMPSIZEfn)
+        cmds.textField('COMPXSIZEtxtfld',cc=self.CHANGECOMPSIZEfn)
         cmds.text(l='Y: ')
-        COMPYSIZEtxtfld=cmds.textField(cc=self.CHANGECOMPSIZEfn)
+        cmds.textField('COMPYSIZEtxtfld',cc=self.CHANGECOMPSIZEfn)
 
         cmds.text(l='',p=f11,h=4)
 
@@ -116,19 +115,19 @@ class synopticGeneratorCLS:
         cmds.separator(p=f11)
         cmds.rowColumnLayout(nc=2, columnWidth=[(1, 20),(2,175)], p=f11)
         cmds.text(l='R: ')
-        COMPCOLORRfltsld=cmds.floatSlider(min=0,max=1,v=0,dc=self.CHANGECOMPCOLORSLIDERfn)
+        cmds.floatSlider('COMPCOLORRfltsld',min=0,max=1,v=0,dc=self.CHANGECOMPCOLORSLIDERfn)
         cmds.text(l='G: ')
-        COMPCOLORGfltsld=cmds.floatSlider(min=0,max=1,dc=self.CHANGECOMPCOLORSLIDERfn)
+        cmds.floatSlider('COMPCOLORGfltsld',min=0,max=1,dc=self.CHANGECOMPCOLORSLIDERfn)
         cmds.text(l='B: ')
-        COMPCOLORBfltsld=cmds.floatSlider(min=0,max=1,dc=self.CHANGECOMPCOLORSLIDERfn)
+        cmds.floatSlider('COMPCOLORBfltsld',min=0,max=1,dc=self.CHANGECOMPCOLORSLIDERfn)
         cmds.separator(p=f11)
         cmds.rowColumnLayout(nc=6, columnWidth=[(1, 20),(2,45), (3, 20),(4,45),(5,20),(6,45)], p=f11)
         cmds.text(l='R:')
-        COMPCOLORRtxtfld=cmds.textField(cc=self.CHANGECOMPCOLORfn)
+        cmds.textField('COMPCOLORRtxtfld',cc=self.CHANGECOMPCOLORfn)
         cmds.text(l='G:')
-        COMPCOLORGtxtfld=cmds.textField(cc=self.CHANGECOMPCOLORfn)
+        cmds.textField('COMPCOLORGtxtfld',cc=self.CHANGECOMPCOLORfn)
         cmds.text(l='B:')
-        COMPCOLORBtxtfld=cmds.textField(cc=self.CHANGECOMPCOLORfn)
+        cmds.textField('COMPCOLORBtxtfld',cc=self.CHANGECOMPCOLORfn)
 
         cmds.text(l='',p=f11,h=4)
 
@@ -138,7 +137,7 @@ class synopticGeneratorCLS:
                     c=self.COMPSETSELECTIONfn)
         cmds.separator(p=f11)
         cmds.text(l='Selection List:',p=f11,al='left')
-        SELECTIONLISTtxtscr=cmds.textScrollList(p=f11,h=100,en=False)
+        cmds.textScrollList('SELECTIONLISTtxtscr',p=f11,h=100,en=False)
         cmds.showWindow()
         return
 
@@ -147,48 +146,45 @@ class synopticGeneratorCLS:
         return
 
     def COMPILELOCALfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld, NAMESPACEtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
-        if cmds.window('currentSynoptic',exists=True)==False:
-            cmds.confirmDialog(icn='warning',\
-                               t='Warning',\
-                               message='There is no active synoptic in the workspace.',\
+        repVar = cmds.confirmDialog(icn='question', t='Proceed', m='Compile synoptic to local repository?',\
+                                    button=['Yes', 'No'])
+
+        if repVar == 'Yes':
+            if cmds.window('currentSynoptic',exists=True) == False:
+                cmds.confirmDialog(icn='warning',\
+                                   t='Warning',\
+                                   message='There is no active synoptic in the workspace.',\
+                                   button=['Ok'])
+                cmds.error('error : no active synoptic in the workspace')
+
+            if os.path.isdir(winRoot+'/synopticLocalLibrary')==False: os.makedirs(winRoot+'/synopticLocalLibrary')
+
+            WRITEvar=self.COMPILEINSTRUCTIONfn()
+
+            if os.path.isfile(winRoot+'/synopticLocalLibrary/'+synopticName+'.pyc')==True:
+                REPvar=cmds.confirmDialog(icn='warning',t='Existing File',\
+                                          m='There is an existing synoptic with the same name. Would you like to replace it?',\
+                                          button=['Yes','No'])
+                if REPvar=='No':
+                    cmds.error('error : operation cancelled by user')
+
+            OPvar=open(winRoot+'/synopticLocalLibrary/'+synopticName+'.py','w')
+            OPvar.write(WRITEvar)
+            OPvar.close()
+
+            imp.load_source(synopticName+'Synoptic',winRoot+'/synopticLocalLibrary/'+synopticName+'.py')
+
+            os.remove(winRoot+'/synopticLocalLibrary/'+synopticName+'.py')
+            cmds.confirmDialog(icn='information',\
+                               t='Compile Done',\
+                               m='Synoptic successfully compiled.',\
                                button=['Ok'])
-            cmds.error('error : no active synoptic in the workspace')
-
-        if os.path.isdir('D:/synopticLocalLibrary')==False:
-            os.makedirs('D:/synopticLocalLibrary')
-
-        WRITEvar=self.COMPILEINSTRUCTIONfn()
-
-        if os.path.isfile('D:/synopticLocalLibrary/'+SYNOPTICNAMEvar+'.pyc')==True:
-            REPvar=cmds.confirmDialog(icn='warning',t='Existing File',\
-                                      m='There is an existing synoptic with the same name. Would you like to replace it?',\
-                                      button=['Yes','No'])
-            if REPvar=='No':
-                cmds.error('error : operation cancelled by user')
-
-        OPvar=open('D:/synopticLocalLibrary/'+SYNOPTICNAMEvar+'.py','w')
-        OPvar.write(WRITEvar)
-        OPvar.close()
-
-        imp.load_source(SYNOPTICNAMEvar+'Synoptic','D:/synopticLocalLibrary/'+SYNOPTICNAMEvar+'.py')
-
-        os.remove('D:/synopticLocalLibrary/'+SYNOPTICNAMEvar+'.py')
-        cmds.confirmDialog(icn='information',\
-                           t='Compile Done',\
-                           m='Synoptic successfully compiled.',\
-                           button=['Ok'])
         return
 
     def COMPILESHARESYNOPTICfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld, NAMESPACEtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         if cmds.window('currentSynoptic',exists=True)==False:
             cmds.confirmDialog(icn='warning',\
@@ -197,7 +193,7 @@ class synopticGeneratorCLS:
                                button=['Ok'])
             cmds.error('error : no active synoptic in the workspace')
 
-        if PROJECTvar=='':
+        if curProj=='':
             cmds.confirmDialog(icn='warning',\
                                t='Sharing Error',\
                                m='Unable to share synoptic outside server service.',\
@@ -206,46 +202,40 @@ class synopticGeneratorCLS:
 
         REPvar=cmds.confirmDialog(icon='question',\
                                   t='Share Synoptic',\
-                                  m='This will share current synoptic to server for project '+PROJECTvar+'.',\
+                                  m='This will share current synoptic to server for project '+curProj+'.',\
                                   button=['Ok','Cancel'])
-        if REPvar=='Cancel':
-            cmds.error('error : cancelled by user')
+        if REPvar=='Cancel': cmds.error('error : cancelled by user')
 
-        if os.path.isdir('X:/TECH/synopticLibrary/'+PROJECTvar)==False:
-            os.makedirs('X:/TECH/synopticLibrary/'+PROJECTvar)
+        if os.path.isdir(rootPath+'/synopticLibrary/'+curProj) == False: os.makedirs(rootPath+'/synopticLibrary/'+curProj)
 
-        WRITEvar=self.COMPILEINSTRUCTIONfn()
+        WRITEvar = self.COMPILEINSTRUCTIONfn()
 
-        if os.path.isfile('X:/TECH/synopticLibrary/'+PROJECTvar+'/'+SYNOPTICNAMEvar+'.pyc')==True:
+        if os.path.isfile(rootPath+'/synopticLibrary/'+curProj+'/'+synopticName+'.pyc')==True:
             REPvar=cmds.confirmDialog(icn='warning',t='Existing File',\
                                       m='There is an existing synoptic with the same name. Would you like to replace it?',\
                                       button=['Yes','No'])
             if REPvar=='No':
                 cmds.error('error : operation cancelled by user')
 
-        OPvar=open('X:/TECH/synopticLibrary/'+PROJECTvar+'/'+SYNOPTICNAMEvar+'.py','w')
+        OPvar=open(rootPath+'/synopticLibrary/'+curProj+'/'+synopticName+'.py','w')
         OPvar.write(WRITEvar)
         OPvar.close()
 
-        imp.load_source(SYNOPTICNAMEvar+'Synoptic','X:/TECH/synopticLibrary/'+PROJECTvar+'/'+SYNOPTICNAMEvar+'.py')
+        imp.load_source(synopticName+'Synoptic',rootPath+'/synopticLibrary/'+curProj+'/'+synopticName+'.py')
 
-        os.remove('X:/TECH/synopticLibrary/'+PROJECTvar+'/'+SYNOPTICNAMEvar+'.py')
+        os.remove(rootPath+'/synopticLibrary/'+curProj+'/'+synopticName+'.py')
         cmds.confirmDialog(icn='information',\
                            t='Compile Done',\
                            m='Synoptic successfully shared to server.',\
                            button=['Ok'])
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
         return
 
     def COMPILESYNOPTICfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld, NAMESPACEtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         if cmds.window('currentSynoptic',exists=True)==False:
             cmds.confirmDialog(icn='warning',\
@@ -261,13 +251,13 @@ class synopticGeneratorCLS:
 
             WRITEvar=self.COMPILEINSTRUCTIONfn()
 
-            OPvar=open(FILESPATHvar+'/'+SYNOPTICNAMEvar+'.py','w')
+            OPvar=open(FILESPATHvar+'/'+synopticName+'.py','w')
             OPvar.write(WRITEvar)
             OPvar.close()
 
-            imp.load_source(SYNOPTICNAMEvar+'Synoptic',FILESPATHvar+'/'+SYNOPTICNAMEvar+'.py')
+            imp.load_source(synopticName+'Synoptic',FILESPATHvar+'/'+synopticName+'.py')
 
-            os.remove(FILESPATHvar+'/'+SYNOPTICNAMEvar+'.py')
+            os.remove(FILESPATHvar+'/'+synopticName+'.py')
             cmds.confirmDialog(icn='information',\
                                t='Compile Done',\
                                m='Synoptic successfully compiled.',\
@@ -276,44 +266,25 @@ class synopticGeneratorCLS:
         return
 
     def COMPILEINSTRUCTIONfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld, NAMESPACEtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         #Write temp file
         WRITEvar=\
 """import maya.cmds as cmds
 
-#License Parsing==========================================================================================
-import maya.mel as mel
-LICERRORvar=0
-try:
-    LICREADvar=mel.eval('mncalic')
-    if LICREADvar<>'Valid License File':
-        LICERRORvar=1
-except:
-    cmds.confirmDialog(icn='warning',t='Missing License',m='Cannot locate MNCA Tools license!', button=['Ok'])
-    cmds.error('Missing License')
-if LICERRORvar==1:
-    cmds.confirmDialog(icn='warning',t='Expired License',m='Your license has expired!', button=['Ok'])
-    cmds.error('Expired License')
-#License Parsing==========================================================================================
-
-
-class """+str(SYNOPTICNAMEvar)+"""CLS:
+class """+str(synopticName)+"""CLS:
     def __init__(self):
         global namespaceBTN, namespaceTXT
-        if cmds.window('"""+str(SYNOPTICNAMEvar)+"""SYN',exists=True):
-            cmds.deleteUI('"""+str(SYNOPTICNAMEvar)+"""SYN',wnd=True)
+        if cmds.window('"""+str(synopticName)+"""SYN',exists=True):
+            cmds.deleteUI('"""+str(synopticName)+"""SYN',wnd=True)
 
-        cmds.window('"""+str(SYNOPTICNAMEvar)+"""SYN',t='"""+str(SYNOPTICNAMEvar)+""" Synoptic',s=False,w="""+str(SYNOPTICSIZEXvar)+""",h="""+str(int(SYNOPTICSIZEYvar)+40)+""")
+        cmds.window('"""+str(synopticName)+"""SYN',t='"""+str(synopticName)+""" Synoptic',s=False,w="""+str(synopticSizeX)+""",h="""+str(int(synopticSizeY)+40)+""")
         form=cmds.formLayout()
-        cmds.text(l='',w="""+str(SYNOPTICSIZEXvar)+""",h="""+str(SYNOPTICSIZEYvar)+""",bgc="""+str(SYNOPTICCOLORvar)+""")
+        cmds.text(l='',w="""+str(synopticSizeX)+""",h="""+str(synopticSizeY)+""",bgc="""+str(synopticColor)+""")
 
 """
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             WRITEvar=WRITEvar+\
 """
         cmds.button('"""+str(chk[0])+"""',l='"""+str(chk[1])+"""',w="""+str(chk[4])+""",h="""+str(chk[5])+""",bgc="""+str(chk[6])+""",c=lambda*args:self.SELECTIONfn("""+str(chk[7])+"""))"""
@@ -323,10 +294,10 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         WRITEvar=WRITEvar+\
 """
 
-        namespaceBTN=cmds.button('nameSpaceButton',l='SET NAMESPACE',h=20,bgc=[1.0,0.643835616566,0.0],w="""+str(SYNOPTICSIZEXvar)+""",c=self.SETNAMESPACEfn)
-        cmds.formLayout(form,e=True,attachForm=[('nameSpaceButton','top',"""+str(SYNOPTICSIZEYvar)+"""),('nameSpaceButton','left',0)])
-        namespaceTXT=cmds.text('textNameSpace',l='<n/a>',h=20,w="""+str(SYNOPTICSIZEXvar)+""",fn='boldLabelFont')
-        cmds.formLayout(form,e=True,attachForm=[('textNameSpace','top',"""+str(SYNOPTICSIZEYvar+20)+"""),('textNameSpace','left',0)])
+        namespaceBTN=cmds.button('nameSpaceButton',l='SET NAMESPACE',h=20,bgc=[1.0,0.643835616566,0.0],w="""+str(synopticSizeX)+""",c=self.SETNAMESPACEfn)
+        cmds.formLayout(form,e=True,attachForm=[('nameSpaceButton','top',"""+str(synopticSizeY)+"""),('nameSpaceButton','left',0)])
+        namespaceTXT=cmds.text('textNameSpace',l='<n/a>',h=20,w="""+str(synopticSizeX)+""",fn='boldLabelFont')
+        cmds.formLayout(form,e=True,attachForm=[('textNameSpace','top',"""+str(synopticSizeY+20)+"""),('textNameSpace','left',0)])
 
         cmds.showWindow()
         return
@@ -361,18 +332,15 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         cmds.text(namespaceTXT,e=True,l=SELvar[:SELvar.find(':')])
         return
 
-"""+str(SYNOPTICNAMEvar)+"""CLS()
+"""+str(synopticName)+"""CLS()
 """
         return WRITEvar
 
     def OPENINSTRUCTIONfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld, NAMESPACEtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         #Unsave shield
-        if SYNOPTICNAMEvar.endswith('*')==True:
+        if synopticName.endswith('*')==True:
             REPvar=cmds.confirmDialog(icn='question',\
                                       t='Save Synoptic',\
                                       m='There is an unsaved synoptic in the workspace. Would you like to save it?',\
@@ -392,19 +360,19 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         root=tree.getroot()
 
         #Get synopticData
-        SYNOPTICSIZEXvar=int(root[0][0].text)
-        SYNOPTICSIZEYvar=int(root[0][1].text)
+        synopticSizeX=int(root[0][0].text)
+        synopticSizeY=int(root[0][1].text)
 
         TEMPlis=[]
         TEMPlis.append(float(root[0][2].get('R')))
         TEMPlis.append(float(root[0][2].get('G')))
         TEMPlis.append(float(root[0][2].get('B')))
-        SYNOPTICCOLORvar=TEMPlis
+        synopticColor=TEMPlis
 
-        SYNOPTICNAMEvar=FILEPATHvar[FILEPATHvar.rfind('/')+1:FILEPATHvar.rfind('.x')]
+        synopticName=FILEPATHvar[FILEPATHvar.rfind('/')+1:FILEPATHvar.rfind('.x')]
 
         #Get componentData
-        COMPONENTSlis=[]
+        componentLis=[]
 
         for chk in root[1]:
             TEMPlis=[]
@@ -421,36 +389,33 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
                 DUMPlis.append(float(chz))
             TEMPlis.append(DUMPlis)
             TEMPlis.append(chk.get('compSelList').split(','))
-            COMPONENTSlis.append(TEMPlis)
+            componentLis.append(TEMPlis)
 
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,ra=True)
-        for chk in COMPONENTSlis:
-            cmds.textScrollList(COMPONENTLIBtxtscr,e=True,a=chk[0])
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,ra=True)
+        for chk in componentLis:
+            cmds.textScrollList('COMPONENTLIBtxtscr',e=True,a=chk[0])
 
-        cmds.textField(COMPNAMEtxtfld,e=True,tx='')
-        cmds.textField(COMPCAPTIONtxtfld,e=True,tx='')
-        cmds.textField(COMPXLOCtxtfld,e=True,tx='')
-        cmds.textField(COMPYLOCtxtfld,e=True,tx='')
-        cmds.textField(COMPXSIZEtxtfld,e=True,tx='')
-        cmds.textField(COMPYSIZEtxtfld,e=True,tx='')
-        cmds.textField(COMPCOLORRtxtfld,e=True,tx='')
-        cmds.textField(COMPCOLORGtxtfld,e=True,tx='')
-        cmds.textField(COMPCOLORBtxtfld,e=True,tx='')
+        cmds.textField('COMPNAMEtxtfld',e=True,tx='')
+        cmds.textField('COMPCAPTIONtxtfld',e=True,tx='')
+        cmds.textField('COMPXLOCtxtfld',e=True,tx='')
+        cmds.textField('COMPYLOCtxtfld',e=True,tx='')
+        cmds.textField('COMPXSIZEtxtfld',e=True,tx='')
+        cmds.textField('COMPYSIZEtxtfld',e=True,tx='')
+        cmds.textField('COMPCOLORRtxtfld',e=True,tx='')
+        cmds.textField('COMPCOLORGtxtfld',e=True,tx='')
+        cmds.textField('COMPCOLORBtxtfld',e=True,tx='')
 
-        cmds.floatSlider(COMPCOLORRfltsld,e=True,v=float(0.0))
-        cmds.floatSlider(COMPCOLORGfltsld,e=True,v=float(0.0))
-        cmds.floatSlider(COMPCOLORBfltsld,e=True,v=float(0.0))
-        cmds.textScrollList(SELECTIONLISTtxtscr,e=True,ra=True)
+        cmds.floatSlider('COMPCOLORRfltsld',e=True,v=float(0.0))
+        cmds.floatSlider('COMPCOLORGfltsld',e=True,v=float(0.0))
+        cmds.floatSlider('COMPCOLORBfltsld',e=True,v=float(0.0))
+        cmds.textScrollList('SELECTIONLISTtxtscr',e=True,ra=True)
 
         #Build synoptic again
         self.BUILDSYNOPTICWINfn()
         return
 
     def SAVEINSTRUCTIONfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld, NAMESPACEtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         #IMPLEMENT XML STYLE FOR SAVING SYNOPTIC INSTRUCTION SET
 
@@ -471,19 +436,19 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         synopticData=ET.SubElement(root,'synopticData')
 
         synXVar=ET.SubElement(synopticData,'synXVar')
-        synXVar.text=str(SYNOPTICSIZEXvar)
+        synXVar.text=str(synopticSizeX)
         synYVar=ET.SubElement(synopticData,'synYVar')
-        synYVar.text=str(SYNOPTICSIZEYvar)
+        synYVar.text=str(synopticSizeY)
         synColorVar=ET.SubElement(synopticData,'synColorLis')
-        synColorVar.set('R',str(SYNOPTICCOLORvar[0]))
-        synColorVar.set('G',str(SYNOPTICCOLORvar[1]))
-        synColorVar.set('B',str(SYNOPTICCOLORvar[2]))
+        synColorVar.set('R',str(synopticColor[0]))
+        synColorVar.set('G',str(synopticColor[1]))
+        synColorVar.set('B',str(synopticColor[2]))
 
         #Saving component data
         componentData=ET.SubElement(root,'componentData')
 
         #Component data listing [<name>,<caption>,<xloc>,<yloc>,<xsize>,<ysize>,<color list>,<selection list>]
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             TEMPvar=ET.SubElement(componentData,str(chk[0]))
             TEMPvar.set('compName',str(chk[0]))
             TEMPvar.set('compCaption',str(chk[1]))
@@ -505,20 +470,17 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         tree=ET.ElementTree(root)
         tree.write(FILEPATHvar)
 
-        SYNOPTICNAMEvar=FILEPATHvar[FILEPATHvar.rfind('/')+1:FILEPATHvar.rfind('.x')]
+        synopticName=FILEPATHvar[FILEPATHvar.rfind('/')+1:FILEPATHvar.rfind('.x')]
 
         #Build synoptic again
         self.BUILDSYNOPTICWINfn()
         return
 
     def COMPSETSELECTIONfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         #Selection check==============================================================
-        SELvar=cmds.textScrollList(COMPONENTLIBtxtscr,q=True,si=True)
+        SELvar=cmds.textScrollList('COMPONENTLIBtxtscr',q=True,si=True)
         if SELvar==None:
             cmds.confirmDialog(icn='warning',\
                                t='Error',\
@@ -527,7 +489,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no component selected')
         SELvar=SELvar[0]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==SELvar:
                 FILElis=chk
 
@@ -546,30 +508,27 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
 
         #Component data listing [<name>,<caption>,<xloc>,<yloc>,<xsize>,<ysize>,<color list>,<selection list>]
         cnt=0
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk==FILElis:
-                COMPONENTSlis[cnt][7]=TEMPlis
+                componentLis[cnt][7]=TEMPlis
             cnt+=1
 
         #Re-select
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,si=SELvar)
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,si=SELvar)
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
 
         self.POPULATECONTROLfn()
         return
 
     def CHANGECOMPCOLORSLIDERfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         #Selection check==============================================================
-        SELvar=cmds.textScrollList(COMPONENTLIBtxtscr,q=True,si=True)
+        SELvar=cmds.textScrollList('COMPONENTLIBtxtscr',q=True,si=True)
         if SELvar==None:
             cmds.confirmDialog(icn='warning',\
                                t='Error',\
@@ -578,7 +537,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no component selected')
         SELvar=SELvar[0]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==SELvar:
                 FILElis=chk
 
@@ -586,30 +545,27 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : unable to find matched selection in memory')
         #Selection check==============================================================
 
-        Rvar=cmds.floatSlider(COMPCOLORRfltsld,q=True,v=True)
-        Gvar=cmds.floatSlider(COMPCOLORGfltsld,q=True,v=True)
-        Bvar=cmds.floatSlider(COMPCOLORBfltsld,q=True,v=True)
+        Rvar=cmds.floatSlider('COMPCOLORRfltsld',q=True,v=True)
+        Gvar=cmds.floatSlider('COMPCOLORGfltsld',q=True,v=True)
+        Bvar=cmds.floatSlider('COMPCOLORBfltsld',q=True,v=True)
 
-        cmds.textField(COMPCOLORRtxtfld,e=True,tx=str(Rvar))
-        cmds.textField(COMPCOLORGtxtfld,e=True,tx=str(Gvar))
-        cmds.textField(COMPCOLORBtxtfld,e=True,tx=str(Bvar))
+        cmds.textField('COMPCOLORRtxtfld',e=True,tx=str(Rvar))
+        cmds.textField('COMPCOLORGtxtfld',e=True,tx=str(Gvar))
+        cmds.textField('COMPCOLORBtxtfld',e=True,tx=str(Bvar))
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
 
         self.CHANGECOMPCOLORfn()
         return
 
     def CHANGECOMPCOLORfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         #Selection check==============================================================
-        SELvar=cmds.textScrollList(COMPONENTLIBtxtscr,q=True,si=True)
+        SELvar=cmds.textScrollList('COMPONENTLIBtxtscr',q=True,si=True)
         if SELvar==None:
             cmds.confirmDialog(icn='warning',\
                                t='Error',\
@@ -618,7 +574,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no component selected')
         SELvar=SELvar[0]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==SELvar:
                 FILElis=chk
 
@@ -626,9 +582,9 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : unable to find matched selection in memory')
         #Selection check==============================================================
         COLORAlis=[]
-        Rvar=cmds.textField(COMPCOLORRtxtfld,q=True,tx=True)
-        Gvar=cmds.textField(COMPCOLORGtxtfld,q=True,tx=True)
-        Bvar=cmds.textField(COMPCOLORBtxtfld,q=True,tx=True)
+        Rvar=cmds.textField('COMPCOLORRtxtfld',q=True,tx=True)
+        Gvar=cmds.textField('COMPCOLORGtxtfld',q=True,tx=True)
+        Bvar=cmds.textField('COMPCOLORBtxtfld',q=True,tx=True)
 
         COLORAlis.append(float(Rvar))
         COLORAlis.append(float(Gvar))
@@ -636,35 +592,32 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
 
         #Component data listing [<name>,<caption>,<xloc>,<yloc>,<xsize>,<ysize>,<color list>,<selection list>]
         cnt=0
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk==FILElis:
-                COMPONENTSlis[cnt][6]=COLORAlis
+                componentLis[cnt][6]=COLORAlis
             cnt+=1
 
         #Build synoptic again
         cmds.button(str(FILElis[0]),e=True,bgc=COLORAlis)
 
-        cmds.floatSlider(COMPCOLORRfltsld,e=True,v=float(Rvar))
-        cmds.floatSlider(COMPCOLORGfltsld,e=True,v=float(Gvar))
-        cmds.floatSlider(COMPCOLORBfltsld,e=True,v=float(Bvar))
+        cmds.floatSlider('COMPCOLORRfltsld',e=True,v=float(Rvar))
+        cmds.floatSlider('COMPCOLORGfltsld',e=True,v=float(Gvar))
+        cmds.floatSlider('COMPCOLORBfltsld',e=True,v=float(Bvar))
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
 
         #Re-select
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,si=SELvar)
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,si=SELvar)
         return
 
     def CHANGECOMPSIZEfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         #Selection check==============================================================
-        SELvar=cmds.textScrollList(COMPONENTLIBtxtscr,q=True,si=True)
+        SELvar=cmds.textScrollList('COMPONENTLIBtxtscr',q=True,si=True)
         if SELvar==None:
             cmds.confirmDialog(icn='warning',\
                                t='Error',\
@@ -673,7 +626,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no component selected')
         SELvar=SELvar[0]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==SELvar:
                 FILElis=chk
 
@@ -681,36 +634,33 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : unable to find matched selection in memory')
         #Selection check==============================================================
 
-        XSIZEvar=cmds.textField(COMPXSIZEtxtfld,q=True,tx=True)
-        YSIZEvar=cmds.textField(COMPYSIZEtxtfld,q=True,tx=True)
+        XSIZEvar=cmds.textField('COMPXSIZEtxtfld',q=True,tx=True)
+        YSIZEvar=cmds.textField('COMPYSIZEtxtfld',q=True,tx=True)
 
         #Component data listing [<name>,<caption>,<xloc>,<yloc>,<xsize>,<ysize>,<color list>,<selection list>]
         cnt=0
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk==FILElis:
-                COMPONENTSlis[cnt][4]=XSIZEvar
-                COMPONENTSlis[cnt][5]=YSIZEvar
+                componentLis[cnt][4]=XSIZEvar
+                componentLis[cnt][5]=YSIZEvar
             cnt+=1
 
         #Build synoptic again
         cmds.button(FILElis[0],e=True,w=int(XSIZEvar),h=int(YSIZEvar))
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
 
         #Re-select
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,si=SELvar)
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,si=SELvar)
         return
 
     def CHANGECOMPPOSINCfn(self,DIRvar):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
-        INCval=cmds.textField(COMPINCREMENTtxtfld,q=True,tx=True)
+        INCval=cmds.textField('COMPINCREMENTtxtfld',q=True,tx=True)
 
         if INCval=='':
             cmds.confirmDialog(icn='warning',\
@@ -727,7 +677,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : X or Y position is not number')
 
         #Selection check==============================================================
-        SELvar=cmds.textScrollList(COMPONENTLIBtxtscr,q=True,si=True)
+        SELvar=cmds.textScrollList('COMPONENTLIBtxtscr',q=True,si=True)
         if SELvar==None:
             cmds.confirmDialog(icn='warning',\
                                t='Error',\
@@ -736,7 +686,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no component selected')
         SELvar=SELvar[0]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==SELvar:
                 FILElis=chk
 
@@ -746,46 +696,43 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
 
         #DIRvar 0=LEFT, 1=RIGHT, 2=UP, 3=DOWN
         if DIRvar==0:
-            CURRENTvar=cmds.textField(COMPXLOCtxtfld,q=True,tx=True)
+            CURRENTvar=cmds.textField('COMPXLOCtxtfld',q=True,tx=True)
             WRITEvar=int(CURRENTvar)-int(INCval)
             if WRITEvar<=0:
                 WRITEvar=0
-            cmds.textField(COMPXLOCtxtfld,e=True,tx=str(WRITEvar))
+            cmds.textField('COMPXLOCtxtfld',e=True,tx=str(WRITEvar))
         elif DIRvar==1:
-            CURRENTvar=cmds.textField(COMPXLOCtxtfld,q=True,tx=True)
+            CURRENTvar=cmds.textField('COMPXLOCtxtfld',q=True,tx=True)
             WRITEvar=(int(CURRENTvar)+int(INCval))
-            if WRITEvar>=int(SYNOPTICSIZEXvar)-int(FILElis[4]):
-                WRITEvar=int(SYNOPTICSIZEXvar)-int(FILElis[4])
-            cmds.textField(COMPXLOCtxtfld,e=True,tx=str(WRITEvar))
+            if WRITEvar>=int(synopticSizeX)-int(FILElis[4]):
+                WRITEvar=int(synopticSizeX)-int(FILElis[4])
+            cmds.textField('COMPXLOCtxtfld',e=True,tx=str(WRITEvar))
         elif DIRvar==2:
-            CURRENTvar=cmds.textField(COMPYLOCtxtfld,q=True,tx=True)
+            CURRENTvar=cmds.textField('COMPYLOCtxtfld',q=True,tx=True)
             WRITEvar=int(CURRENTvar)-int(INCval)
             if WRITEvar<=0:
                 WRITEvar=0
-            cmds.textField(COMPYLOCtxtfld,e=True,tx=str(WRITEvar))
+            cmds.textField('COMPYLOCtxtfld',e=True,tx=str(WRITEvar))
         elif DIRvar==3:
-            CURRENTvar=cmds.textField(COMPYLOCtxtfld,q=True,tx=True)
+            CURRENTvar=cmds.textField('COMPYLOCtxtfld',q=True,tx=True)
             WRITEvar=int(CURRENTvar)+int(INCval)
-            if WRITEvar>=int(SYNOPTICSIZEYvar)-int(FILElis[5]):
-                WRITEvar=int(SYNOPTICSIZEYvar)-int(FILElis[5])
-            cmds.textField(COMPYLOCtxtfld,e=True,tx=str(WRITEvar))
+            if WRITEvar>=int(synopticSizeY)-int(FILElis[5]):
+                WRITEvar=int(synopticSizeY)-int(FILElis[5])
+            cmds.textField('COMPYLOCtxtfld',e=True,tx=str(WRITEvar))
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
 
         self.CHANGECOMPPOSfn()
         return
 
     def CHANGECOMPPOSfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
-        XPOSvar=cmds.textField(COMPXLOCtxtfld,q=True,tx=True)
-        YPOSvar=cmds.textField(COMPYLOCtxtfld,q=True,tx=True)
+        XPOSvar=cmds.textField('COMPXLOCtxtfld',q=True,tx=True)
+        YPOSvar=cmds.textField('COMPYLOCtxtfld',q=True,tx=True)
 
         if XPOSvar=='' or YPOSvar=='':
             cmds.confirmDialog(icn='warning',\
@@ -802,7 +749,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : X or Y position is not number')
 
         #Selection check==============================================================
-        SELvar=cmds.textScrollList(COMPONENTLIBtxtscr,q=True,si=True)
+        SELvar=cmds.textScrollList('COMPONENTLIBtxtscr',q=True,si=True)
         if SELvar==None:
             cmds.confirmDialog(icn='warning',\
                                t='Error',\
@@ -811,7 +758,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no component selected')
         SELvar=SELvar[0]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==SELvar:
                 FILElis=chk
 
@@ -821,32 +768,29 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
 
         #Component data listing [<name>,<caption>,<xloc>,<yloc>,<xsize>,<ysize>,<color list>,<selection list>]
         cnt=0
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk==FILElis:
-                COMPONENTSlis[cnt][2]=XPOSvar
-                COMPONENTSlis[cnt][3]=YPOSvar
+                componentLis[cnt][2]=XPOSvar
+                componentLis[cnt][3]=YPOSvar
             cnt+=1
 
         #Build synoptic again
         cmds.formLayout('currentSynopticFL',e=True,attachForm=[(str(FILElis[0]),'top',int(YPOSvar)),(str(FILElis[0]),'left',int(XPOSvar))])
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
 
         #Re-select
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,si=SELvar)
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,si=SELvar)
         return
 
     def CHANGECOMPNCAPTIONfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         #Selection check==============================================================
-        SELvar=cmds.textScrollList(COMPONENTLIBtxtscr,q=True,si=True)
+        SELvar=cmds.textScrollList('COMPONENTLIBtxtscr',q=True,si=True)
         if SELvar==None:
             cmds.confirmDialog(icn='warning',\
                                t='Error',\
@@ -855,7 +799,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no component selected')
         SELvar=SELvar[0]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==SELvar:
                 FILElis=chk
 
@@ -863,37 +807,34 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : unable to find matched selection in memory')
         #Selection check==============================================================
 
-        NEWNAMEvar=str(cmds.textField(COMPCAPTIONtxtfld,q=True,tx=True))
+        NEWNAMEvar=str(cmds.textField('COMPCAPTIONtxtfld',q=True,tx=True))
 
         cnt=0
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk==FILElis:
-                COMPONENTSlis[cnt][1]=NEWNAMEvar
+                componentLis[cnt][1]=NEWNAMEvar
             cnt+=1
 
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,ra=True)
-        for chk in COMPONENTSlis:
-            cmds.textScrollList(COMPONENTLIBtxtscr,e=True,a=chk[0])
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,ra=True)
+        for chk in componentLis:
+            cmds.textScrollList('COMPONENTLIBtxtscr',e=True,a=chk[0])
 
         #Build synoptic again
         cmds.button(str(FILElis[0]),e=True,l=str(NEWNAMEvar))
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
         #Re-select
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,si=SELvar)
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,si=SELvar)
         return
 
     def CHANGECOMPNAMEfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         #Selection check==============================================================
-        SELvar=cmds.textScrollList(COMPONENTLIBtxtscr,q=True,si=True)
+        SELvar=cmds.textScrollList('COMPONENTLIBtxtscr',q=True,si=True)
         if SELvar==None:
             cmds.confirmDialog(icn='warning',\
                                t='Error',\
@@ -902,7 +843,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no component selected')
         SELvar=SELvar[0]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==SELvar:
                 FILElis=chk
 
@@ -910,50 +851,50 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : unable to find matched selection in memory')
         #Selection check==============================================================
 
-        NEWNAMEvar=str(cmds.textField(COMPNAMEtxtfld,q=True,tx=True))
+        NEWNAMEvar=str(cmds.textField('COMPNAMEtxtfld',q=True,tx=True))
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==NEWNAMEvar:
                 cmds.confirmDialog(icn='warning',\
                                    title='Error',\
                                    message='There is another component with the nema '+NEWNAMEvar+'.',\
                                    button=['Ok'])
-                cmds.textScrollList(COMPONENTLIBtxtscr,e=True,ra=True)
-                for chk in COMPONENTSlis:
-                    cmds.textScrollList(COMPONENTLIBtxtscr,e=True,a=chk[0])
+                cmds.textScrollList('COMPONENTLIBtxtscr',e=True,ra=True)
+                for chk in componentLis:
+                    cmds.textScrollList('COMPONENTLIBtxtscr',e=True,a=chk[0])
 
-                cmds.textField(COMPNAMEtxtfld,e=True,tx='')
-                cmds.textField(COMPCAPTIONtxtfld,e=True,tx='')
-                cmds.textField(COMPXLOCtxtfld,e=True,tx='')
-                cmds.textField(COMPYLOCtxtfld,e=True,tx='')
-                cmds.textField(COMPXSIZEtxtfld,e=True,tx='')
-                cmds.textField(COMPYSIZEtxtfld,e=True,tx='')
-                cmds.textField(COMPCOLORRtxtfld,e=True,tx='')
-                cmds.textField(COMPCOLORGtxtfld,e=True,tx='')
-                cmds.textField(COMPCOLORBtxtfld,e=True,tx='')
+                cmds.textField('COMPNAMEtxtfld',e=True,tx='')
+                cmds.textField('COMPCAPTIONtxtfld',e=True,tx='')
+                cmds.textField('COMPXLOCtxtfld',e=True,tx='')
+                cmds.textField('COMPYLOCtxtfld',e=True,tx='')
+                cmds.textField('COMPXSIZEtxtfld',e=True,tx='')
+                cmds.textField('COMPYSIZEtxtfld',e=True,tx='')
+                cmds.textField('COMPCOLORRtxtfld',e=True,tx='')
+                cmds.textField('COMPCOLORGtxtfld',e=True,tx='')
+                cmds.textField('COMPCOLORBtxtfld',e=True,tx='')
 
-                cmds.floatSlider(COMPCOLORRfltsld,e=True,v=float(0.0))
-                cmds.floatSlider(COMPCOLORGfltsld,e=True,v=float(0.0))
-                cmds.floatSlider(COMPCOLORBfltsld,e=True,v=float(0.0))
-                cmds.textScrollList(SELECTIONLISTtxtscr,e=True,ra=True)
+                cmds.floatSlider('COMPCOLORRfltsld',e=True,v=float(0.0))
+                cmds.floatSlider('COMPCOLORGfltsld',e=True,v=float(0.0))
+                cmds.floatSlider('COMPCOLORBfltsld',e=True,v=float(0.0))
+                cmds.textScrollList('SELECTIONLISTtxtscr',e=True,ra=True)
                 cmds.error('error : identical component name')
 
         cnt=0
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk==FILElis:
-                COMPONENTSlis[cnt][0]=NEWNAMEvar
+                componentLis[cnt][0]=NEWNAMEvar
             cnt+=1
 
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,ra=True)
-        for chk in COMPONENTSlis:
-            cmds.textScrollList(COMPONENTLIBtxtscr,e=True,a=chk[0])
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,ra=True)
+        for chk in componentLis:
+            cmds.textScrollList('COMPONENTLIBtxtscr',e=True,a=chk[0])
 
         #Re-select
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,si=NEWNAMEvar)
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,si=NEWNAMEvar)
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
 
         #Build synoptic again
@@ -961,13 +902,10 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         return
 
     def DELETECOMPONENTfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld,NAMESPACEtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         #Selection check==============================================================
-        SELvar=cmds.textScrollList(COMPONENTLIBtxtscr,q=True,si=True)
+        SELvar=cmds.textScrollList('COMPONENTLIBtxtscr',q=True,si=True)
         if SELvar==None:
             cmds.confirmDialog(icn='warning',\
                                t='Error',\
@@ -976,7 +914,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no component selected')
         SELvar=SELvar[0]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==SELvar:
                 FILElis=chk
 
@@ -991,77 +929,73 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         if REPvar=='No':
             cmds.error('error : cancelled by user')
 
-        COMPONENTSlis.remove(FILElis)
+        componentLis.remove(FILElis)
 
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,ra=True)
-        for chk in COMPONENTSlis:
-            cmds.textScrollList(COMPONENTLIBtxtscr,e=True,a=chk[0])
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,ra=True)
+        for chk in componentLis:
+            cmds.textScrollList('COMPONENTLIBtxtscr',e=True,a=chk[0])
 
-        cmds.textField(COMPNAMEtxtfld,e=True,tx='')
-        cmds.textField(COMPCAPTIONtxtfld,e=True,tx='')
-        cmds.textField(COMPXLOCtxtfld,e=True,tx='')
-        cmds.textField(COMPYLOCtxtfld,e=True,tx='')
-        cmds.textField(COMPXSIZEtxtfld,e=True,tx='')
-        cmds.textField(COMPYSIZEtxtfld,e=True,tx='')
-        cmds.textField(COMPCOLORRtxtfld,e=True,tx='')
-        cmds.textField(COMPCOLORGtxtfld,e=True,tx='')
-        cmds.textField(COMPCOLORBtxtfld,e=True,tx='')
+        cmds.textField('COMPNAMEtxtfld',e=True,tx='')
+        cmds.textField('COMPCAPTIONtxtfld',e=True,tx='')
+        cmds.textField('COMPXLOCtxtfld',e=True,tx='')
+        cmds.textField('COMPYLOCtxtfld',e=True,tx='')
+        cmds.textField('COMPXSIZEtxtfld',e=True,tx='')
+        cmds.textField('COMPYSIZEtxtfld',e=True,tx='')
+        cmds.textField('COMPCOLORRtxtfld',e=True,tx='')
+        cmds.textField('COMPCOLORGtxtfld',e=True,tx='')
+        cmds.textField('COMPCOLORBtxtfld',e=True,tx='')
 
-        cmds.floatSlider(COMPCOLORRfltsld,e=True,v=float(0.0))
-        cmds.floatSlider(COMPCOLORGfltsld,e=True,v=float(0.0))
-        cmds.floatSlider(COMPCOLORBfltsld,e=True,v=float(0.0))
+        cmds.floatSlider('COMPCOLORRfltsld',e=True,v=float(0.0))
+        cmds.floatSlider('COMPCOLORGfltsld',e=True,v=float(0.0))
+        cmds.floatSlider('COMPCOLORBfltsld',e=True,v=float(0.0))
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
 
-        cmds.textScrollList(SELECTIONLISTtxtscr,e=True,ra=True)
+        cmds.textScrollList('SELECTIONLISTtxtscr',e=True,ra=True)
         cmds.deleteUI(FILElis[0],control=True)
         return
 
     def POPULATECONTROLfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld, SELECTIONLISTtxtscr
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
-        SELvar=cmds.textScrollList(COMPONENTLIBtxtscr,q=True,si=True)
+        SELvar=cmds.textScrollList('COMPONENTLIBtxtscr',q=True,si=True)
         if SELvar==[]:
             cmds.error('error : no component selected')
         SELvar=SELvar[0]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==SELvar:
                 FILElis=chk
 
         if FILElis==[]:
             cmds.error('error : unable to find matched selection in memory')
         #Component data listing [<name>,<caption>,<xloc>,<yloc>,<xsize>,<ysize>,<color list>,<selection list>]
-        cmds.textField(COMPNAMEtxtfld,e=True,tx=FILElis[0])
-        cmds.textField(COMPCAPTIONtxtfld,e=True,tx=FILElis[1])
-        cmds.textField(COMPXLOCtxtfld,e=True,tx=FILElis[2])
-        cmds.textField(COMPYLOCtxtfld,e=True,tx=FILElis[3])
-        cmds.textField(COMPXSIZEtxtfld,e=True,tx=FILElis[4])
-        cmds.textField(COMPYSIZEtxtfld,e=True,tx=FILElis[5])
-        cmds.textField(COMPCOLORRtxtfld,e=True,tx=FILElis[6][0])
-        cmds.textField(COMPCOLORGtxtfld,e=True,tx=FILElis[6][1])
-        cmds.textField(COMPCOLORBtxtfld,e=True,tx=FILElis[6][2])
+        cmds.textField('COMPNAMEtxtfld',e=True,tx=FILElis[0])
+        cmds.textField('COMPCAPTIONtxtfld',e=True,tx=FILElis[1])
+        cmds.textField('COMPXLOCtxtfld',e=True,tx=FILElis[2])
+        cmds.textField('COMPYLOCtxtfld',e=True,tx=FILElis[3])
+        cmds.textField('COMPXSIZEtxtfld',e=True,tx=FILElis[4])
+        cmds.textField('COMPYSIZEtxtfld',e=True,tx=FILElis[5])
+        cmds.textField('COMPCOLORRtxtfld',e=True,tx=FILElis[6][0])
+        cmds.textField('COMPCOLORGtxtfld',e=True,tx=FILElis[6][1])
+        cmds.textField('COMPCOLORBtxtfld',e=True,tx=FILElis[6][2])
 
-        cmds.floatSlider(COMPCOLORRfltsld,e=True,v=float(FILElis[6][0]))
-        cmds.floatSlider(COMPCOLORGfltsld,e=True,v=float(FILElis[6][1]))
-        cmds.floatSlider(COMPCOLORBfltsld,e=True,v=float(FILElis[6][2]))
+        cmds.floatSlider('COMPCOLORRfltsld',e=True,v=float(FILElis[6][0]))
+        cmds.floatSlider('COMPCOLORGfltsld',e=True,v=float(FILElis[6][1]))
+        cmds.floatSlider('COMPCOLORBfltsld',e=True,v=float(FILElis[6][2]))
 
-        cmds.textScrollList(SELECTIONLISTtxtscr,e=True,ra=True)
+        cmds.textScrollList('SELECTIONLISTtxtscr',e=True,ra=True)
         for chk in FILElis[7]:
-            cmds.textScrollList(SELECTIONLISTtxtscr,e=True,a=chk)
+            cmds.textScrollList('SELECTIONLISTtxtscr',e=True,a=chk)
 
         #CONTINUE WRITING CODE FOR POPULATING COMPONENT CONTROL BASED ON COMPONENT LIBRARY
         return
 
     def ADDCOMPONENTfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         if cmds.window('currentSynoptic',exists=True)==False:
             cmds.confirmDialog(icn='warning',\
@@ -1088,7 +1022,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         COLORlis=[0.7,0.7,0.7]
         SELECTIONlis=[]
 
-        for chk in COMPONENTSlis:
+        for chk in componentLis:
             if chk[0]==NAMEvar:
                 cmds.confirmDialog(icn='warning',t='Duplicate',message='Component name already exist.', button=['Ok'])
                 cmds.error('error : component name exist')
@@ -1103,31 +1037,31 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         TEMPlis.append(COLORlis)
         TEMPlis.append(SELECTIONlis)
 
-        COMPONENTSlis.append(TEMPlis)
+        componentLis.append(TEMPlis)
 
-        cmds.textScrollList(COMPONENTLIBtxtscr,e=True,ra=True)
-        for chk in COMPONENTSlis:
-            cmds.textScrollList(COMPONENTLIBtxtscr,e=True,a=chk[0])
+        cmds.textScrollList('COMPONENTLIBtxtscr',e=True,ra=True)
+        for chk in componentLis:
+            cmds.textScrollList('COMPONENTLIBtxtscr',e=True,a=chk[0])
 
-        cmds.textField(COMPNAMEtxtfld,e=True,tx='')
-        cmds.textField(COMPCAPTIONtxtfld,e=True,tx='')
-        cmds.textField(COMPXLOCtxtfld,e=True,tx='')
-        cmds.textField(COMPYLOCtxtfld,e=True,tx='')
-        cmds.textField(COMPXSIZEtxtfld,e=True,tx='')
-        cmds.textField(COMPYSIZEtxtfld,e=True,tx='')
-        cmds.textField(COMPCOLORRtxtfld,e=True,tx='')
-        cmds.textField(COMPCOLORGtxtfld,e=True,tx='')
-        cmds.textField(COMPCOLORBtxtfld,e=True,tx='')
+        cmds.textField('COMPNAMEtxtfld',e=True,tx='')
+        cmds.textField('COMPCAPTIONtxtfld',e=True,tx='')
+        cmds.textField('COMPXLOCtxtfld',e=True,tx='')
+        cmds.textField('COMPYLOCtxtfld',e=True,tx='')
+        cmds.textField('COMPXSIZEtxtfld',e=True,tx='')
+        cmds.textField('COMPYSIZEtxtfld',e=True,tx='')
+        cmds.textField('COMPCOLORRtxtfld',e=True,tx='')
+        cmds.textField('COMPCOLORGtxtfld',e=True,tx='')
+        cmds.textField('COMPCOLORBtxtfld',e=True,tx='')
 
-        cmds.floatSlider(COMPCOLORRfltsld,e=True,v=float(0.0))
-        cmds.floatSlider(COMPCOLORGfltsld,e=True,v=float(0.0))
-        cmds.floatSlider(COMPCOLORBfltsld,e=True,v=float(0.0))
+        cmds.floatSlider('COMPCOLORRfltsld',e=True,v=float(0.0))
+        cmds.floatSlider('COMPCOLORGfltsld',e=True,v=float(0.0))
+        cmds.floatSlider('COMPCOLORBfltsld',e=True,v=float(0.0))
 
-        cmds.textScrollList(SELECTIONLISTtxtscr,e=True,ra=True)
+        cmds.textScrollList('SELECTIONLISTtxtscr',e=True,ra=True)
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
         #Build synoptic again
         cmds.button(str(TEMPlis[0]),l=str(TEMPlis[1]),w=int(TEMPlis[4]),h=int(TEMPlis[5]),bgc=TEMPlis[6],en=False)
@@ -1165,7 +1099,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         return
 
     def CHANGESYNWINSIZEfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
 
 
@@ -1177,15 +1111,15 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no active synoptic in the workspace')
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
 
         cmds.layoutDialog(title='Change Size',ui=self.SETSYNWINfn)
         return
 
     def CHANGESYNWINCOLORfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
 
 
@@ -1197,8 +1131,8 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
             cmds.error('error : no active synoptic in the workspace')
 
         #UNSAVED MARKER============================================================
-        if SYNOPTICNAMEvar.endswith('*')==False:
-            SYNOPTICNAMEvar=SYNOPTICNAMEvar+'*'
+        if synopticName.endswith('*')==False:
+            synopticName=synopticName+'*'
         #UNSAVED MARKER============================================================
         cmds.layoutDialog(title='Change Color',ui=self.SETSYNCOLORfn)
         return
@@ -1206,26 +1140,26 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
     #SYNOPTIC BUILDING==================================================================================================
     #===================================================================================================================
     def BUILDSYNOPTICWINfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
         if cmds.window('currentSynoptic',exists=True):
             cmds.deleteUI('currentSynoptic',wnd=True)
 
         #Build window
         cmds.window('currentSynoptic',\
-                    t=SYNOPTICNAMEvar,\
+                    t=synopticName,\
                     mw=False,\
                     mnb=False,\
                     mxb=False,\
-                    w=SYNOPTICSIZEXvar,\
-                    h=SYNOPTICSIZEYvar,\
+                    w=synopticSizeX,\
+                    h=synopticSizeY,\
                     s=False,\
                     tbm=False)
         #cmas=cmds.columnLayout(adj=True)
 
         #Build component
         form=cmds.formLayout('currentSynopticFL')
-        cmds.text(l='',w=SYNOPTICSIZEXvar,h=SYNOPTICSIZEYvar,bgc=SYNOPTICCOLORvar)
-        for chk in COMPONENTSlis:
+        cmds.text(l='',w=synopticSizeX,h=synopticSizeY,bgc=synopticColor)
+        for chk in componentLis:
             #Parse component
             #Component data listing [<name>,<caption>,<xloc>,<yloc>,<xsize>,<ysize>,<color list>,<selection list>]
             cmds.button(str(chk[0]),l=str(chk[1]),w=int(chk[4]),h=int(chk[5]),bgc=chk[6],\
@@ -1241,16 +1175,16 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
     #SYNOPTIC BUILDING==================================================================================================
 
     def SETSYNWINPROCfn(self,XVALvar, YVALvar):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
         if XVALvar.isdigit()==True and YVALvar.isdigit()==True:
-            SYNOPTICSIZEXvar=int(XVALvar)
-            SYNOPTICSIZEYvar=int(YVALvar)
-            SYNOPTICNAMEvar='Untitled Synoptic*'
+            synopticSizeX=int(XVALvar)
+            synopticSizeY=int(YVALvar)
+            synopticName='Untitled Synoptic*'
             self.BUILDSYNOPTICWINfn()
             cmds.layoutDialog(dismiss='CONTINUE')
         else:
-            SYNOPTICSIZEXvar=''
-            SYNOPTICSIZEYvar=''
+            synopticSizeX=''
+            synopticSizeY=''
             cmds.confirmDialog(icn='warning',\
                                t='Invalid Data',\
                                m='Invalid size data entered.',\
@@ -1261,10 +1195,7 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         return
 
     def NEWSYNfn(self,*args):
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld, NAMESPACEtxtfld
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
         if cmds.window('currentSynoptic',exists=True):
             REPvar=cmds.confirmDialog(icn='warning',\
                                       title='Current Synoptic Open',\
@@ -1272,38 +1203,35 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
                                       button=['Clear Synoptic','Cancel'])
             if REPvar=='Clear Synoptic':
                 cmds.deleteUI('currentSynoptic',wnd=True)
-                SYNOPTICSIZEXvar=''
-                SYNOPTICSIZEYvar=''
-                SYNOPTICNAMEvar=''
-                SYNOPTICCOLORvar=[0.5,0.5,0.5]
-                COMPONENTSlis=[]
+                synopticSizeX=''
+                synopticSizeY=''
+                synopticName=''
+                synopticColor=[0.5,0.5,0.5]
+                componentLis=[]
 
-                cmds.textScrollList(COMPONENTLIBtxtscr,e=True,ra=True)
-                cmds.textField(COMPNAMEtxtfld,e=True,tx='')
-                cmds.textField(COMPCAPTIONtxtfld,e=True,tx='')
-                cmds.textField(COMPXLOCtxtfld,e=True,tx='')
-                cmds.textField(COMPYLOCtxtfld,e=True,tx='')
-                cmds.textField(COMPXSIZEtxtfld,e=True,tx='')
-                cmds.textField(COMPYSIZEtxtfld,e=True,tx='')
-                cmds.textField(COMPCOLORRtxtfld,e=True,tx='')
-                cmds.textField(COMPCOLORGtxtfld,e=True,tx='')
-                cmds.textField(COMPCOLORBtxtfld,e=True,tx='')
+                cmds.textScrollList('COMPONENTLIBtxtscr',e=True,ra=True)
+                cmds.textField('COMPNAMEtxtfld',e=True,tx='')
+                cmds.textField('COMPCAPTIONtxtfld',e=True,tx='')
+                cmds.textField('COMPXLOCtxtfld',e=True,tx='')
+                cmds.textField('COMPYLOCtxtfld',e=True,tx='')
+                cmds.textField('COMPXSIZEtxtfld',e=True,tx='')
+                cmds.textField('COMPYSIZEtxtfld',e=True,tx='')
+                cmds.textField('COMPCOLORRtxtfld',e=True,tx='')
+                cmds.textField('COMPCOLORGtxtfld',e=True,tx='')
+                cmds.textField('COMPCOLORBtxtfld',e=True,tx='')
 
-                cmds.floatSlider(COMPCOLORRfltsld,e=True,v=float(0.0))
-                cmds.floatSlider(COMPCOLORGfltsld,e=True,v=float(0.0))
-                cmds.floatSlider(COMPCOLORBfltsld,e=True,v=float(0.0))
+                cmds.floatSlider('COMPCOLORRfltsld',e=True,v=float(0.0))
+                cmds.floatSlider('COMPCOLORGfltsld',e=True,v=float(0.0))
+                cmds.floatSlider('COMPCOLORBfltsld',e=True,v=float(0.0))
 
-                cmds.textScrollList(SELECTIONLISTtxtscr,e=True,ra=True)
+                cmds.textScrollList('SELECTIONLISTtxtscr',e=True,ra=True)
             else:
                 cmds.error('error : cancelled by user')
         REPvar=cmds.layoutDialog(title='New Synoptic',ui=self.SETSYNWINfn)
         return
 
     def SETSYNWINfn(self,*args):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
-        global COMPONENTLIBtxtscr,COMPNAMEtxtfld,COMPCAPTIONtxtfld,COMPXLOCtxtfld,COMPYLOCtxtfld,COMPINCREMENTtxtfld,\
-        COMPXSIZEtxtfld,COMPYSIZEtxtfld,COMPCOLORRfltsld,COMPCOLORGfltsld,COMPCOLORBfltsld,COMPCOLORRtxtfld,\
-        COMPCOLORGtxtfld,COMPCOLORBtxtfld, NAMESPACEtxtfld
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
 
         c1=cmds.columnLayout(adj=True,w=200)
         cmds.text(l='')
@@ -1313,13 +1241,13 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         cmds.text(l='X: ',fn='boldLabelFont')
 
         if cmds.window('currentSynoptic',exists=True):
-            XVALvar=cmds.textField(tx=str(SYNOPTICSIZEXvar))
+            XVALvar=cmds.textField(tx=str(synopticSizeX))
         else:
             XVALvar=cmds.textField(tx='200')
         cmds.text(l='Y: ',fn='boldLabelFont')
 
         if cmds.window('currentSynoptic',exists=True):
-            YVALvar=cmds.textField(tx=str(SYNOPTICSIZEYvar))
+            YVALvar=cmds.textField(tx=str(synopticSizeY))
         else:
             YVALvar=cmds.textField(tx='400')
 
@@ -1330,12 +1258,12 @@ class """+str(SYNOPTICNAMEvar)+"""CLS:
         return
 
     def SETSYNCOLORPROCfn(self,Rvar,Gvar,Bvar):
-        global SYNOPTICSIZEXvar, SYNOPTICSIZEYvar, SYNOPTICNAMEvar, SYNOPTICCOLORvar, COMPONENTSlis
+        global synopticSizeX, synopticSizeY, synopticName, synopticColor, componentLis
         COLORlis=[]
         COLORlis.append(Rvar)
         COLORlis.append(Gvar)
         COLORlis.append(Bvar)
-        SYNOPTICCOLORvar= COLORlis
+        synopticColor= COLORlis
         cmds.layoutDialog(dismiss='CONTINUE')
         self.BUILDSYNOPTICWINfn()
         return

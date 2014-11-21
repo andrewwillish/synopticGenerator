@@ -3,30 +3,30 @@ __author__ = 'andrew.willis'
 #SYNOPTIC LAUNCHER
 
 import maya.cmds as cmds
-import os, imp
-try:
-    import MNCA_projectid
-    PROJECTvar= MNCA_projectid.PROJECTIDcls().id()
-except:
-    PROJECTvar=''
-    pass
+import os, imp, asiist
 
-#License Parsing==========================================================================================
-import licenseParsing
-licenseParsing.licParse()
-#License Parsing==========================================================================================
+#windows root
+winRoot = os.environ['ProgramFiles'][:2]+'/'
+
+#determining root path
+rootPath = os.path.dirname(os.path.realpath(__file__)).replace('\\','/')
+
+#fetch data from projInfo
+enviFetch=asiist.getEnvi()
+for chk in enviFetch:
+    if chk[0] == 'projName': curProj = chk[1]
+    if chk[0] == 'resWidth': resWidth = chk[1]
+    if chk[0] == 'resHeight': resHeight = chk[1]
+    if chk[0] == 'playblastCodec': codec = chk[1]
+    if chk[0] == 'playblastFormat': playblastFormat = chk[1]
 
 class synopticLauncherCLS:
     def __init__(self):
         global SCRIPTlis, PROJECTtxt
-        if cmds.window('synopticLauncher',exists=True):
-            cmds.deleteUI('synopticLauncher',wnd=True)
+        if cmds.window('synopticLauncher',exists=True): cmds.deleteUI('synopticLauncher',wnd=True)
 
         cmds.window('synopticLauncher',t='Synoptic Launcher',s=False,w=200)
         cmas=cmds.columnLayout(adj=True,w=200)
-
-        f1=cmds.frameLayout(l='Project',p=cmas)
-        PROJECTtxt=cmds.text(fn='boldLabelFont',h=20)
 
         f2=cmds.frameLayout(l='Synoptic',p=cmas)
         SCRIPTlis=cmds.textScrollList(w=200,h=300,dcc=self.RUNSYNfn)
@@ -59,13 +59,12 @@ class synopticLauncherCLS:
             cmds.error('error : no item selected from list')
         else:
             SELvar=SELvar[0]
-        os.remove('X:/TECH/synopticLibrary/'+PROJECTvar+'/'+SELvar+'.pyc')
+        os.remove(rootPath+'/synopticLibrary/'+curProj+'/'+SELvar+'.pyc')
         self.REFRESHfn()
         return
 
     def RUNSYNfn(self,*args):
         global SCRIPTlis, PROJECTtxt
-
         SELvar=cmds.textScrollList(SCRIPTlis,q=True,si=True)
         if SELvar==None:
             cmds.confirmDialog(icn='warning',\
@@ -76,7 +75,7 @@ class synopticLauncherCLS:
         else:
             SELvar=SELvar[0]
         try:
-            imp.load_compiled(SELvar,'X:/TECH/synopticLibrary/'+PROJECTvar+'/'+SELvar+'.pyc')
+            imp.load_compiled(SELvar,rootPath+'/synopticLibrary/'+curProj+'/'+SELvar+'.pyc')
         except Exception as e:
             cmds.confirmDialog(icn='warning',\
                                t='Error',\
@@ -87,14 +86,11 @@ class synopticLauncherCLS:
 
     def REFRESHfn(self,*args):
         global SCRIPTlis, PROJECTtxt
-        SYNlis=os.listdir('X:/TECH/synopticLibrary/'+PROJECTvar)
+        SYNlis=os.listdir(rootPath+'/synopticLibrary/'+curProj)
 
         cmds.textScrollList(SCRIPTlis,e=True,ra=True)
 
-        for chk in SYNlis:
-            cmds.textScrollList(SCRIPTlis,e=True,a=chk.replace('.pyc',''))
-
-        cmds.text(PROJECTtxt,e=True,l=PROJECTvar)
+        for chk in SYNlis:cmds.textScrollList(SCRIPTlis,e=True,a=chk.replace('.pyc',''))
         return
 
 
