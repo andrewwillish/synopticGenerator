@@ -12,7 +12,7 @@ winRoot = os.environ['ProgramFiles'][:2]+'/'
 rootPath = os.path.dirname(os.path.realpath(__file__)).replace('\\','/')
 
 #fetch data from projInfo
-enviFetch=asiist.getEnvi()
+enviFetch = asiist.getEnvi()
 for chk in enviFetch:
     if chk[0] == 'projName': curProj = chk[1]
     if chk[0] == 'resWidth': resWidth = chk[1]
@@ -25,7 +25,8 @@ class synopticLauncherCLS:
         global SCRIPTlis, PROJECTtxt
         if cmds.window('synopticLauncher',exists=True): cmds.deleteUI('synopticLauncher',wnd=True)
 
-        cmds.window('synopticLauncher',t='Synoptic Launcher',s=False,w=200)
+        win = cmds.window(t='Synoptic Launcher',s=False,w=200)
+        cmds.renameUI(win, 'synopticLauncher')
         cmas=cmds.columnLayout(adj=True,w=200)
 
         f2=cmds.frameLayout(l='Synoptic',p=cmas)
@@ -86,7 +87,8 @@ class synopticLauncherCLS:
 
     def REFRESHfn(self,*args):
         global SCRIPTlis, PROJECTtxt
-        SYNlis=os.listdir(rootPath+'/synopticLibrary/'+curProj)
+        if not os.path.isdir(rootPath+'/synopticLibrary/'+curProj): os.makedirs(rootPath+'/synopticLibrary/'+curProj)
+        SYNlis = os.listdir(rootPath+'/synopticLibrary/'+curProj)
 
         cmds.textScrollList(SCRIPTlis,e=True,ra=True)
 

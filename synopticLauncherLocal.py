@@ -11,7 +11,8 @@ class synopticLauncherLocalCLS:
         if cmds.window('synopticLauncherLocal',exists=True):
             cmds.deleteUI('synopticLauncherLocal',wnd=True)
 
-        cmds.window('synopticLauncherLocal',t='Local Synoptic Launcher',s=False,w=200)
+        win = cmds.window(t='Local Synoptic Launcher',s=False,w=200)
+        cmds.renameUI(win, 'synopticLauncherLocal')
         cmas=cmds.columnLayout(adj=True,w=200)
 
         SCRIPTlis=cmds.textScrollList(w=200,h=200,dcc=self.RUNSYNfn)

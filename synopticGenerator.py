@@ -37,7 +37,8 @@ class synopticGeneratorCLS:
         if cmds.window('synopticGenerator', exists=True):cmds.deleteUI('synopticGenerator', wnd=True)
         if cmds.window('currentSynoptic', exists=True):cmds.deleteUI('currentSynoptic',wnd=True)
 
-        cmds.window('synopticGenerator',t='Synoptic Generator',menuBar=True,s=False,w=205,h=750,tbm=False)
+        win = cmds.window(t='Synoptic Generator',menuBar=True,s=False,w=205,h=750,tbm=False)
+        cmds.renameUI(win, 'synopticGenerator')
         cmds.menu(l='File')
         cmds.menuItem(l='New Synoptic',c=self.NEWSYNfn)
         cmds.menuItem(divider=True)
@@ -275,10 +276,10 @@ class synopticGeneratorCLS:
 class """+str(synopticName)+"""CLS:
     def __init__(self):
         global namespaceBTN, namespaceTXT
-        if cmds.window('"""+str(synopticName)+"""SYN',exists=True):
-            cmds.deleteUI('"""+str(synopticName)+"""SYN',wnd=True)
+        if cmds.window('"""+str(synopticName)+"""SYN',exists=True):cmds.deleteUI('"""+str(synopticName)+"""SYN',wnd=True)
 
-        cmds.window('"""+str(synopticName)+"""SYN',t='"""+str(synopticName)+""" Synoptic',s=False,w="""+str(synopticSizeX)+""",h="""+str(int(synopticSizeY)+40)+""")
+        win = cmds.window(t='"""+str(synopticName)+""" Synoptic',s=False,w="""+str(synopticSizeX)+""",h="""+str(int(synopticSizeY)+40)+""")
+        cmds.renameUI(win, '"""+str(synopticName)+"""SYN')
         form=cmds.formLayout()
         cmds.text(l='',w="""+str(synopticSizeX)+""",h="""+str(synopticSizeY)+""",bgc="""+str(synopticColor)+""")
 
